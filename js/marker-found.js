@@ -129,130 +129,136 @@
     }
 
     // Show content for specific marker value
-    function showContentForMarker(value) {
-    // Log the marker value
-    logMarkerShown(value);
-    
-    if (currentVisibleMarker === value) {
-        return;
-    }
-
-    // Hide all pieces from previous marker
-    ['markerpiece_', 'centerpiece_', 'leftpiece_', 'rightpiece_'].forEach(prefix => {
-        const element = document.getElementById(prefix + currentVisibleMarker);
-        if (element) {
-            element.setAttribute('visible', 'false');
-        }
-    });
-    
-    stopAllNarration();
-    pauseAllVideos();
-
-        if (currentVisibleMarker) {
-        const previousSurround = document.getElementById(`surround_${currentVisibleMarker}`);
-        if (previousSurround && previousSurround.tagName === 'A-VIDEOSPHERE') {
-            try {
-                const video = previousSurround.components.material.material.map.image;
-                if (video && video instanceof HTMLVideoElement) {
-                    video.pause();
-                    console.log(`⏸️ Paused surround video for previous marker: ${currentVisibleMarker}`);
-                }
-            } catch(e) {
-                // Ignore
-            }
-        }
-    }
-
-    const narrationElement = document.getElementById(`narration_${value}`);
-    if (narrationElement) {
-        try {
-            narrationElement.components.sound.playSound();
-        } catch(e) {
-            // Ignore errors
-        }
-    }
-
-    // Show surround element for this marker if it exists
-        const surroundElement = document.getElementById(`surround_${value}`);
-    if (surroundElement) {
-        surroundElement.setAttribute('visible', true);
-        if (surroundElement.tagName === 'A-VIDEOSPHERE') {
-            try {
-                const video = surroundElement.components.material.material.map.image;
-                if (video && video instanceof HTMLVideoElement) {
-                    // Reset to beginning and play
-                    video.currentTime = 0;
-                    video.play().catch(e => console.warn('Could not play surround video:', e));
-                    console.log(`▶️ Playing surround video for marker: ${value}`);
-                }
-            } catch(e) {
-                console.warn('Could not play surround video:', e);
-            }
-        }
-    }
-    
-    // Show marker piece
-    var markerPiece = document.getElementById('markerpiece_' + value);
-    if (markerPiece) {
-        markerPiece.setAttribute('visible', true);
-        
-        var markerContent = markerPiece.querySelector('[id^="markerContent_"]');
-        if (markerContent) {
-            markerContent.setAttribute('visible', true);
+    // Show content for specific marker value
+        function showContentForMarker(value) {
+            // Log the marker value
+            logMarkerShown(value);
             
-            var firstMarkerMedia = findFirstMediaElement(markerContent);
-            if (firstMarkerMedia) {
-                firstMarkerMedia.setAttribute('visible', true);
+            if (currentVisibleMarker === value) {
+                return;
+            }
 
-                if (firstMarkerMedia.tagName === 'A-VIDEO' && firstMarkerMedia.getAttribute('auto-play') === 'true') {
+            // Hide all pieces from previous marker
+            ['markerpiece_', 'centerpiece_', 'leftpiece_', 'rightpiece_'].forEach(prefix => {
+                const element = document.getElementById(prefix + currentVisibleMarker);
+                if (element) {
+                    element.setAttribute('visible', 'false');
+                }
+            });
+            
+            stopAllNarration();
+            pauseAllVideos();
+            
+            // ⭐ PAUSE previous surround video (like regular videos)
+            if (currentVisibleMarker) {
+                const previousSurround = document.getElementById(`surround_${currentVisibleMarker}`);
+                if (previousSurround && previousSurround.tagName === 'A-VIDEOSPHERE') {
                     try {
-                        firstMarkerMedia.components.material.material.map.image.play();
+                        const video = previousSurround.components.material.material.map.image;
+                        if (video && video instanceof HTMLVideoElement) {
+                            video.pause();
+                            console.log(`⏸️ Paused surround video for marker ${currentVisibleMarker}`);
+                        }
                     } catch(e) {
-                        // Ignore errors
+                        // Ignore
+                    }
+                }
+                // Hide previous surround
+                if (previousSurround) {
+                    previousSurround.setAttribute('visible', 'false');
+                }
+            }
+
+            // Play narration for new marker
+            const narrationElement = document.getElementById(`narration_${value}`);
+            if (narrationElement) {
+                try {
+                    narrationElement.components.sound.playSound();
+                } catch(e) {
+                    // Ignore errors
+                }
+            }
+
+            // ⭐ Show and play surround element for this marker
+            const surroundElement = document.getElementById(`surround_${value}`);
+            if (surroundElement) {
+                surroundElement.setAttribute('visible', true);
+                if (surroundElement.tagName === 'A-VIDEOSPHERE') {
+                    try {
+                        const video = surroundElement.components.material.material.map.image;
+                        if (video && video instanceof HTMLVideoElement) {
+                            video.currentTime = 0; // Start from beginning
+                            video.play().catch(e => console.warn('Could not play surround video:', e));
+                            console.log(`▶️ Playing surround video for marker: ${value}`);
+                        }
+                    } catch(e) {
+                        console.warn('Could not play surround video:', e);
+                    }
+                }
+            }
+            
+            // Show marker piece
+            var markerPiece = document.getElementById('markerpiece_' + value);
+            if (markerPiece) {
+                markerPiece.setAttribute('visible', true);
+                
+                var markerContent = markerPiece.querySelector('[id^="markerContent_"]');
+                if (markerContent) {
+                    markerContent.setAttribute('visible', true);
+                    
+                    var firstMarkerMedia = findFirstMediaElement(markerContent);
+                    if (firstMarkerMedia) {
+                        firstMarkerMedia.setAttribute('visible', true);
+
+                        if (firstMarkerMedia.tagName === 'A-VIDEO' && firstMarkerMedia.getAttribute('auto-play') === 'true') {
+                            try {
+                                firstMarkerMedia.components.material.material.map.image.play();
+                            } catch(e) {
+                                // Ignore errors
+                            }
+                        }
+                        
+                        var mediaType = 'image';
+                        if (firstMarkerMedia.tagName === 'A-VIDEO'){
+                            mediaType = 'video';
+                        } else if (firstMarkerMedia.tagName === 'A-ENTITY' || firstMarkerMedia.hasAttribute('gltf-model')) {
+                            mediaType = '3d';
+                        }
+                        
+                        var controlsId;
+                        if (mediaType === 'image') {
+                            controlsId = 'markerControls_0';
+                        } else if (mediaType === 'video') {
+                            controlsId = 'markerVideoControls_0';
+                        } else if (mediaType === '3d') {
+                            controlsId = 'marker3dControls_0';
+                        }
+                        
+                        var markerControls = markerContent.querySelector('#' + controlsId);
+                        if (markerControls) {
+                            markerControls.setAttribute('visible', true);
+                            markerControls.querySelectorAll('*').forEach(child => {
+                                child.setAttribute('visible', true);
+                            });
+                        }
                     }
                 }
                 
-                var mediaType = 'image';
-                if (firstMarkerMedia.tagName === 'A-VIDEO'){
-                    mediaType = 'video';
-                } else if (firstMarkerMedia.tagName === 'A-ENTITY' || firstMarkerMedia.hasAttribute('gltf-model')) {
-                    mediaType = '3d';
-                }
-                
-                var controlsId;
-                if (mediaType === 'image') {
-                    controlsId = 'markerControls_0';
-                } else if (mediaType === 'video') {
-                    controlsId = 'markerVideoControls_0';
-                } else if (mediaType === '3d') {
-                    controlsId = 'marker3dControls_0';
-                }
-                
-                var markerControls = markerContent.querySelector('#' + controlsId);
-                if (markerControls) {
-                    markerControls.setAttribute('visible', true);
-                    markerControls.querySelectorAll('*').forEach(child => {
+                var markerNavigation = markerPiece.querySelector(`#markerpiece_${value}_navigation`);
+                if (markerNavigation) {
+                    markerNavigation.setAttribute('visible', true);
+                    markerNavigation.querySelectorAll('*').forEach(child => {
                         child.setAttribute('visible', true);
                     });
                 }
             }
+            
+            handlePiece('centerpiece', value);
+            handlePiece('leftpiece', value);
+            handlePiece('rightpiece', value);
+            
+            currentVisibleMarker = value;
         }
-        
-        var markerNavigation = markerPiece.querySelector(`#markerpiece_${value}_navigation`);
-        if (markerNavigation) {
-            markerNavigation.setAttribute('visible', true);
-            markerNavigation.querySelectorAll('*').forEach(child => {
-                child.setAttribute('visible', true);
-            });
-        }
-    }
-    
-    handlePiece('centerpiece', value);
-    handlePiece('leftpiece', value);
-    handlePiece('rightpiece', value);
-    
-    currentVisibleMarker = value;
-}
 
         // Debounced wrapper for marker detection
     function showContentForMarkerDebounced(value) {
@@ -293,24 +299,27 @@
                 console.log(`\n👋 Marker ${value} lost`);
                 logMarkerLost(value);
 
-                 // Clear debouncer 
+                // Clear debouncer 
                 if (debounceTimer) {
                     clearTimeout(debounceTimer);
                     debounceTimer = null;
                 }
 
-                    if (currentVisibleMarker === value) {
-                    // ⭐ PAUSE surround video when marker is lost
+                if (currentVisibleMarker === value) {
+                    // ⭐ PAUSE and HIDE surround video when marker is lost
                     const surroundElement = document.getElementById(`surround_${value}`);
-                    if (surroundElement && surroundElement.tagName === 'A-VIDEOSPHERE') {
-                        try {
-                            const video = surroundElement.components.material.material.map.image;
-                            if (video && video instanceof HTMLVideoElement) {
-                                video.pause();
-                                console.log(`⏸️ Paused surround video for marker ${value}`);
+                    if (surroundElement) {
+                        surroundElement.setAttribute('visible', 'false');
+                        if (surroundElement.tagName === 'A-VIDEOSPHERE') {
+                            try {
+                                const video = surroundElement.components.material.material.map.image;
+                                if (video && video instanceof HTMLVideoElement) {
+                                    video.pause();
+                                    console.log(`⏸️ Paused surround video for marker ${value}`);
+                                }
+                            } catch(e) {
+                                console.warn(`Could not pause surround video: ${e}`);
                             }
-                        } catch(e) {
-                            console.warn(`Could not pause surround video: ${e}`);
                         }
                     }
 

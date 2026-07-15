@@ -4,8 +4,8 @@ const AppContent = {
     data: null,
 
     //jsonFile: 'content.json', 
-    //jsonFile: 'contentcenter.json', 
-    jsonFile: 'contentcenterandmarker.json',
+    jsonFile: 'contentcenter.json', 
+    //jsonFile: 'contentcenterandmarker.json',
     //jsonFile: 'contentpt.json', 
     //jsonFile: 'contentcenterpt.json', 
     //jsonFile: 'contentcenterandmarkerpt.json', 
@@ -125,25 +125,23 @@ const AppContent = {
         surroundElement.setAttribute('src', surroundSrc);
         surroundElement.setAttribute('rotation', `0 ${surroundRotation || 0} 0`);
         surroundElement.setAttribute('radius', '40');
-        surroundElement.setAttribute('visible', 'false');
+        surroundElement.setAttribute('visible', 'false'); // Start invisible
         
-        // ⭐ CRITICAL: Pause video immediately when loaded
+        // ⭐ PAUSE VIDEO IMMEDIATELY - same as regular videos
         surroundElement.addEventListener('loadedmetadata', () => {
             try {
                 const video = surroundElement.components.material.material.map.image;
                 if (video && video instanceof HTMLVideoElement) {
                     video.pause();
-                    // Also prevent autoplay
-                    video.autoplay = false;
-                    console.log(`⏸️ Paused surround video for page ${pageIndex} (initial load)`);
+                    console.log(`⏸️ Paused surround video for page ${pageIndex}`);
                 }
             } catch(e) {
                 console.warn('Could not pause surround video:', e);
             }
         });
-        
-        // ⭐ Also pause if video loads through other means
-        surroundElement.addEventListener('loadeddata', () => {
+
+        // ⭐ Additional pause attempts like regular videos
+        setTimeout(() => {
             try {
                 const video = surroundElement.components.material.material.map.image;
                 if (video && video instanceof HTMLVideoElement) {
@@ -152,7 +150,21 @@ const AppContent = {
             } catch(e) {
                 // Ignore
             }
-        });
+        }, 1000);
+        
+        setTimeout(() => {
+            try {
+                const video = surroundElement.components.material.material.map.image;
+                if (video && video instanceof HTMLVideoElement) {
+                    video.pause();
+                }
+            } catch(e) {
+                // Ignore
+            }
+        }, 3000);
+        
+        // Disable autoplay
+        surroundElement.setAttribute('autoplay', 'false');
         
     } else {
         // Create sphere for 360 image
