@@ -38,7 +38,7 @@
           "type": "3d",
           "controls": "true",
           "src": "assets/white hawk animation.glb",
-          "scale": 1,
+          "scale": 0.2,
           "auto_rotate": false,
           "rotation": {
             "x": 0,
