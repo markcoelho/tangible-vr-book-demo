@@ -1,0 +1,62 @@
+{
+  "pages": [
+    {
+      "barcode_number": 0,
+      "narration": "assets/music.mp3",
+      "surround": "",
+      "surround_rotation": 0,
+      "central_side": [
+        {
+          "type": "image",
+          "controls": "true",
+          "src": "assets/wh1.jpg",
+          "scale": 1
+        },
+        {
+          "type": "image",
+          "controls": "true",
+          "src": "assets/wh2.jpg",
+          "scale": 1
+        },
+        {
+          "type": "image",
+          "controls": "true",
+          "src": "assets/wh3.jpg",
+          "scale": 1
+        },
+        {
+          "type": "image",
+          "controls": "true",
+          "src": "assets/wh4.jpg",
+          "scale": 1
+        }
+      ],
+      "left_side": [],
+      "right_side": [],
+      "marker": [
+        {
+          "type": "3d",
+          "controls": "true",
+          "src": "assets/white hawk animation.glb",
+          "scale": 1,
+          "auto_rotate": false,
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      ]
+    },
+    {
+      "barcode_number": 1,
+      "narration": "",
+      "surround": "assets/360 video.mp4",
+      "surround_rotation": 0,
+      "central_side": [],
+      "left_side": [],
+      "right_side": [],
+      "marker": []
+    }
+  ]
+}

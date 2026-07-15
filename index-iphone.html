@@ -1,0 +1,516 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no,viewport-fit=cover">
+
+        <script src="libs/aframe-master-iphone.js"></script>
+        <!-- <script src="https://aframe.io/releases/0.9.2/aframe.min.js"></script>-->
+        <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
+        <script src="libs/aframe-ar-iphone.js"></script>
+
+        <script src="js/passthroughFeed.js"></script>
+        <script src="js/content-loader.js"></script>
+        <script src="js/raycast-interaction.js"></script>
+        <script src="js/navigation-creator.js"></script>
+        <script src="js/marker-found.js"></script>
+        <script src="js/navigation.js"></script>
+        <script src="js/controls.js"></script>
+        <script src="js/worldrotationadjust.js"></script>
+  
+
+        <style>
+                body {
+                        margin: 0;
+                        overflow: hidden;
+                        position: fixed;
+                        width: 100%;
+                        height: 100%;
+                        font-family: monospace;
+                }
+
+                .a-canvas {
+                        z-index: 1 !important;
+                        position: absolute !important;
+                }
+
+                .a-enter-vr {
+                        z-index: 2 !important; 
+                        position: absolute !important;
+                        bottom: unset !important;
+                        top: 0 !important;
+                }
+
+                .a-enter-vr-button {
+                        top: 150px !important;
+                        bottom:unset !important;
+                }
+        </style>
+
+</head>
+
+<body>
+        <a-scene renderer="sortObjects: true" color="black" vr-mode-ui="enabled: true; "
+                arjs="cameraDesc: back ultra wide; 
+                debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+
+                <a-camera look-controls="enabled: true" far="10000">
+
+                        <!-- Raycaster for interactions -->
+                        <a-cursor id="raycaster"
+                                raycaster="objects: [interactableroot] [data-raycastable]; showLine: false;" color="red"
+                                scale="0.01 0.01 0.01">
+                                <a-ring radius-inner="0.01" radius-outer="0.7" color="red"></a-ring>
+                        </a-cursor>
+
+                        <a-sky color="#000000"></a-sky>
+
+                        <!-- AR video feed -->
+                        <a-video id="arjs_feed" position="0 0 -50" width="83" height="83" render-order="0"
+                                transparent="true" opacity="0.5"></a-video>
+
+
+                        <!-- Marker Container -->
+                        <a-marker id="markerpiece" type='barcode' value='0' emitevents="true">
+                                <!-- Marker content container -->
+                                <a-entity id="markerContent" position="0 0 0">
+                                        <!-- Marker media elements -->
+                                        <a-image id="markerImage" src="" scale="3 3 3" render-order="1"
+                                                visible="false"></a-image>
+                                        <a-video id="markerVideo" src="" scale="3 3 3" render-order="1"
+                                                visible="false"></a-video>
+                                        <a-entity id="markerModel" gltf-model="" scale="1 1 1" render-order="1"
+                                                visible="false"></a-entity>
+
+                                        <!-- Marker Image controls -->
+                                        <a-plane rotation="-90 0 0" visible="false" opacity="0" position="0 -1.8 0.1"
+                                                width="1.8" height="0.4" id="markerControls"
+                                                material="depthTest: false;">
+                                                <a-image src="assets/icons/reset.png" class="marker-reset"
+                                                        position="-0.7 0 0.1" scale="0.18 0.18 0.18"
+                                                        gaze-interaction-handler="action: reset; target: marker; fuseTimeout: 1000"
+                                                        material="depthTest: false;"></a-image>
+
+                                                <!-- Scrolling arrows - ADDED gaze-interaction-handler -->
+                                                <a-image src="assets/icons/up.png" class="marker-scroller"
+                                                        id="marker-scroller-top" position="0 0.1 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="up" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+                                                <a-image src="assets/icons/right.png" class="marker-scroller"
+                                                        id="marker-scroller-right" position="0.2 0 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="right" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+                                                <a-image src="assets/icons/down.png" class="marker-scroller"
+                                                        id="marker-scroller-bottom" position="0 -0.1 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="down" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+                                                <a-image src="assets/icons/left.png" class="marker-scroller"
+                                                        id="marker-scroller-left" position="-0.2 0 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="left" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+
+                                                <!-- Zoom controls -->
+                                                <a-image class="marker-zoom-button" src="assets/icons/zoom-in.png"
+                                                        position="0.5 0 0.1" scale="0.18 0.18 0.18"
+                                                        data-action="increase" data-target="marker"
+                                                        material="depthTest: false;"
+                                                        gaze-interaction-handler="action: increase; target: marker; fuseTimeout: 500"></a-image>
+                                                <a-image class="marker-zoom-button" src="assets/icons/zoom-out.png"
+                                                        position="0.7 0 0.1" scale="0.18 0.18 0.18"
+                                                        data-action="decrease" data-target="marker"
+                                                        material="depthTest: false;"
+                                                        gaze-interaction-handler="action: decrease; target: marker; fuseTimeout: 500"></a-image>
+                                        </a-plane>
+
+                                        <!-- Marker Video controls -->
+                                        <a-plane rotation="-90 0 0" visible="false" opacity="0" position="0 -1.8 0.1"
+                                                width="1.8" height="0.4" id="markerVideoControls"
+                                                material="depthTest: false;">
+                                                <a-image src="assets/icons/reset.png" class="marker-restart"
+                                                        position="-0.7 0 0.1" scale="0.18 0.18 0.18"
+                                                        gaze-interaction-handler="action: restart; target: marker; fuseTimeout: 1000"
+                                                        material="depthTest: false;"></a-image>
+                                                <a-image src="assets/icons/mute.png" class="marker-mute"
+                                                        position="-0.2 0 0.1" scale="0.18 0.18 0.18"
+                                                        gaze-interaction-handler="action: mute; target: marker; fuseTimeout: 1000"
+                                                        material="depthTest: false;"></a-image>
+                                                <a-image class="marker-fast-backward"
+                                                        src="assets/icons/fastbackward.png" position="0.5 0 0.1"
+                                                        scale="0.18 0.18 0.18" data-action="backward"
+                                                        data-target="marker" material="depthTest: false;"
+                                                        gaze-interaction-handler="action: backward; target: marker; fuseTimeout: 500"></a-image>
+                                                <a-image class="marker-fast-forward" src="assets/icons/fastforward.png"
+                                                        position="0.7 0 0.1" scale="0.18 0.18 0.18"
+                                                        data-action="forward" data-target="marker"
+                                                        material="depthTest: false;"
+                                                        gaze-interaction-handler="action: forward; target: marker; fuseTimeout: 500"></a-image>
+                                        </a-plane>
+
+                                        <!-- Marker 3D controls -->
+                                        <a-plane rotation="-90 0 0" visible="false" opacity="0" position="0 -1.8 0.1"
+                                                width="1.8" height="0.4" id="marker3dControls"
+                                                material="depthTest: false;">
+                                                <a-image src="assets/icons/reset.png" class="marker-3dreset"
+                                                        position="-0.7 0 0.1" scale="0.18 0.18 0.18"
+                                                        gaze-interaction-handler="action: 3dreset; target: marker; fuseTimeout: 1000"
+                                                        material="depthTest: false;"></a-image>
+
+                                                <!-- Rotating arrows - ADDED gaze-interaction-handler -->
+                                                <a-image src="assets/icons/up.png" class="marker-roller"
+                                                        id="marker-roller-up" position="0 0.1 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="up" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+                                                <a-image src="assets/icons/right.png" class="marker-roller"
+                                                        id="marker-roller-right" position="0.2 0 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="right" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+                                                <a-image src="assets/icons/down.png" class="marker-roller"
+                                                        id="marker-roller-down" position="0 -0.1 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="down" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+                                                <a-image src="assets/icons/left.png" class="marker-roller"
+                                                        id="marker-roller-left" position="-0.2 0 0.1"
+                                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                                        data-direction="left" data-target="marker"
+                                                        gaze-interaction-handler></a-image>
+
+                                                <!-- Zoom controls -->
+                                                <a-image class="marker-model-zoom-button" src="assets/icons/zoom-in.png"
+                                                        position="0.5 0 0.1" scale="0.18 0.18 0.18"
+                                                        data-action="3dincrease" data-target="marker"
+                                                        material="depthTest: false;"
+                                                        gaze-interaction-handler="action: 3dincrease; target: marker; fuseTimeout: 500"></a-image>
+                                                <a-image class="marker-model-zoom-button"
+                                                        src="assets/icons/zoom-out.png" position="0.7 0 0.1"
+                                                        scale="0.18 0.18 0.18" data-action="3ddecrease"
+                                                        data-target="marker" material="depthTest: false;"
+                                                        gaze-interaction-handler="action: 3ddecrease; target: marker; fuseTimeout: 500"></a-image>
+                                        </a-plane>
+                                </a-entity>
+                        </a-marker>
+
+                </a-camera>
+
+
+                <!-- video 360 -->
+                <a-videosphere position="0 0 0" src="assets/360/360-video-test.mp4" radius="40"
+                        visible="false"></a-videosphere>
+                <!-- image 360 -->
+                <a-sphere position="0 0 0" radius="40" src="assets/360/360-image-test.jpg"
+                        material="shader: flat; side: back" visible="false"></a-sphere>
+
+                <!-- Center content container -->
+                <a-entity id="centerpiece" position="0 0 -5" visible="false">
+                        <!-- Main media elements -->
+                        <a-image id="centerImage" src="" scale="3 3 3" render-order="1" visible="false"></a-image>
+                        <a-video id="centerVideo" src="" scale="3 3 3" render-order="1" visible="false"></a-video>
+                        <a-entity id="centerModel" gltf-model="" scale="1 1 1" render-order="1"
+                                visible="false"></a-entity>
+
+                        <!-- Image controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="centerControls" material="depthTest: false;">
+                                <a-image src="assets/icons/reset.png" class="reset" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: reset; fuseTimeout: 1000"
+                                        material="depthTest: false;"></a-image>
+
+                                <!-- Scrolling arrows - ADDED gaze-interaction-handler -->
+                                <a-image src="assets/icons/up.png" class="scroller" id="scroller-top"
+                                        position="0 0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        data-direction="up" gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/right.png" class="scroller" id="scroller-right"
+                                        position="0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        data-direction="right" gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/down.png" class="scroller" id="scroller-bottom"
+                                        position="0 -0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        data-direction="down" gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/left.png" class="scroller" id="scroller-left"
+                                        position="-0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        data-direction="left" gaze-interaction-handler></a-image>
+
+                                <!-- Zoom controls -->
+                                <a-image class="zoom-button" src="assets/icons/zoom-in.png" position="0.5 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="increase" material="depthTest: false;"
+                                        gaze-interaction-handler="action: increase; fuseTimeout: 500"></a-image>
+                                <a-image class="zoom-button" src="assets/icons/zoom-out.png" position="0.7 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="decrease" material="depthTest: false;"
+                                        gaze-interaction-handler="action: decrease; fuseTimeout: 500"></a-image>
+                        </a-plane>
+
+                        <!-- Video controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="centerVideoControls" material="depthTest: false;">
+                                <a-image src="assets/icons/reset.png" class="restart" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: restart; fuseTimeout: 1000"
+                                        material="depthTest: false;"></a-image>
+                                <a-image src="assets/icons/mute.png" class="mute" position="-0.2 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: mute; fuseTimeout: 1000"
+                                        material="depthTest: false;"></a-image>
+                                <a-image class="fast-backward" src="assets/icons/fastbackward.png" position="0.5 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="backward" material="depthTest: false;"
+                                        gaze-interaction-handler="action: backward; fuseTimeout: 500"></a-image>
+                                <a-image class="fast-forward" src="assets/icons/fastforward.png" position="0.7 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="forward" material="depthTest: false;"
+                                        gaze-interaction-handler="action: forward; fuseTimeout: 500"></a-image>
+                        </a-plane>
+
+                        <!-- 3D controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="center3dControls" material="depthTest: false;">
+                                <a-image src="assets/icons/reset.png" class="3dreset" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: 3dreset; fuseTimeout: 1000"
+                                        material="depthTest: false;"></a-image>
+
+                                <!-- Rotating arrows - ADDED gaze-interaction-handler -->
+                                <a-image src="assets/icons/up.png" class="roller" id="roller-up" position="0 0.1 0.1"
+                                        scale="0.18 0.18 0.18" material="depthTest: false;" data-direction="up"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/right.png" class="roller" id="roller-right"
+                                        position="0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        data-direction="right" gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/down.png" class="roller" id="roller-down"
+                                        position="0 -0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        data-direction="down" gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/left.png" class="roller" id="roller-left"
+                                        position="-0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        data-direction="left" gaze-interaction-handler></a-image>
+
+                                <!-- Zoom controls -->
+                                <a-image class="model-zoom-button" src="assets/icons/zoom-in.png" position="0.5 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="3dincrease" material="depthTest: false;"
+                                        gaze-interaction-handler="action: 3dincrease; fuseTimeout: 500"></a-image>
+                                <a-image class="model-zoom-button" src="assets/icons/zoom-out.png" position="0.7 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="3ddecrease" material="depthTest: false;"
+                                        gaze-interaction-handler="action: 3ddecrease; fuseTimeout: 500"></a-image>
+                        </a-plane>
+                </a-entity>
+
+                <!-- Left content container -->
+                <a-entity id="leftpiece" position="-5 0 -1" rotation="0 90 0" visible="false">
+                        <!-- Left media elements -->
+                        <a-image id="leftImage" src="" scale="3 3 3" render-order="1" visible="false"></a-image>
+                        <a-video id="leftVideo" src="" scale="3 3 3" render-order="1" visible="false"></a-video>
+                        <a-entity id="leftModel" gltf-model="" scale="1 1 1" render-order="1"
+                                visible="false"></a-entity>
+
+                        <!-- Left Image controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="leftControls" material="depthTest: false;" render-order="1">
+                                <a-image src="assets/icons/reset.png" class="left-reset" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        gaze-interaction-handler="action: reset; target: left; fuseTimeout: 1000"
+                                        render-order="3"></a-image>
+
+                                <!-- Scrolling arrows - ADDED gaze-interaction-handler -->
+                                <a-image src="assets/icons/up.png" class="left-scroller" id="left-scroller-top"
+                                        position="0 0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="up" data-target="left"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/right.png" class="left-scroller" id="left-scroller-right"
+                                        position="0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="right" data-target="left"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/down.png" class="left-scroller" id="left-scroller-bottom"
+                                        position="0 -0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="down" data-target="left"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/left.png" class="left-scroller" id="left-scroller-left"
+                                        position="-0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="left" data-target="left"
+                                        gaze-interaction-handler></a-image>
+
+                                <!-- Zoom controls -->
+                                <a-image class="left-zoom-button" src="assets/icons/zoom-in.png" position="0.5 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="increase" data-target="left"
+                                        material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: increase; target: left; fuseTimeout: 500"></a-image>
+                                <a-image class="left-zoom-button" src="assets/icons/zoom-out.png" position="0.7 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="decrease" data-target="left"
+                                        material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: decrease; target: left; fuseTimeout: 500"></a-image>
+                        </a-plane>
+
+                        <!-- Left Video controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="leftVideoControls" material="depthTest: false;" render-order="2">
+                                <a-image src="assets/icons/reset.png" class="left-restart" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: restart; target: left; fuseTimeout: 1000"
+                                        material="depthTest: false;" render-order="3"></a-image>
+                                <a-image src="assets/icons/mute.png" class="left-mute" position="-0.2 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: mute; target: left; fuseTimeout: 1000"
+                                        material="depthTest: false;" render-order="3"></a-image>
+                                <a-image class="left-fast-backward" src="assets/icons/fastbackward.png"
+                                        position="0.5 0 0.1" scale="0.18 0.18 0.18" data-action="backward"
+                                        data-target="left" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: backward; target: left; fuseTimeout: 500"></a-image>
+                                <a-image class="left-fast-forward" src="assets/icons/fastforward.png"
+                                        position="0.7 0 0.1" scale="0.18 0.18 0.18" data-action="forward"
+                                        data-target="left" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: forward; target: left; fuseTimeout: 500"></a-image>
+                        </a-plane>
+
+                        <!-- Left 3D controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="left3dControls" material="depthTest: false;" render-order="2">
+                                <a-image src="assets/icons/reset.png" class="left-3dreset" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: 3dreset; target: left; fuseTimeout: 1000"
+                                        material="depthTest: false;" render-order="3"></a-image>
+
+                                <!-- Rotating arrows - ADDED gaze-interaction-handler -->
+                                <a-image src="assets/icons/up.png" class="left-roller" id="left-roller-up"
+                                        position="0 0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="up" data-target="left"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/right.png" class="left-roller" id="left-roller-right"
+                                        position="0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="right" data-target="left"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/down.png" class="left-roller" id="left-roller-down"
+                                        position="0 -0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="down" data-target="left"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/left.png" class="left-roller" id="left-roller-left"
+                                        position="-0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="left" data-target="left"
+                                        gaze-interaction-handler></a-image>
+
+                                <!-- Zoom controls -->
+                                <a-image class="left-model-zoom-button" src="assets/icons/zoom-in.png"
+                                        position="0.5 0 0.1" scale="0.18 0.18 0.18" data-action="3dincrease"
+                                        data-target="left" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: 3dincrease; target: left; fuseTimeout: 500"></a-image>
+                                <a-image class="left-model-zoom-button" src="assets/icons/zoom-out.png"
+                                        position="0.7 0 0.1" scale="0.18 0.18 0.18" data-action="3ddecrease"
+                                        data-target="left" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: 3ddecrease; target: left; fuseTimeout: 500"></a-image>
+                        </a-plane>
+                </a-entity>
+
+                <!-- Right content container -->
+                <a-entity id="rightpiece" position="5 0 -1" rotation="0 -90 0" visible="false">
+                        <!-- Right media elements -->
+                        <a-image id="rightImage" src="" scale="3 3 3" render-order="1" visible="false"></a-image>
+                        <a-video id="rightVideo" src="" scale="3 3 3" render-order="1" visible="false"></a-video>
+                        <a-entity id="rightModel" gltf-model="" scale="1 1 1" render-order="1"
+                                visible="false"></a-entity>
+
+                        <!-- Right Image controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="rightControls" material="depthTest: false;">
+                                <a-image src="assets/icons/reset.png" class="right-reset" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: reset; target: right; fuseTimeout: 1000"
+                                        material="depthTest: false;"></a-image>
+
+                                <!-- Scrolling arrows - ADDED gaze-interaction-handler -->
+                                <a-image src="assets/icons/up.png" class="right-scroller" id="right-scroller-top"
+                                        position="0 0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="up" data-target="right"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/right.png" class="right-scroller" id="right-scroller-right"
+                                        position="0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="right" data-target="right"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/down.png" class="right-scroller" id="right-scroller-bottom"
+                                        position="0 -0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="down" data-target="right"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/left.png" class="right-scroller" id="right-scroller-left"
+                                        position="-0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="left" data-target="right"
+                                        gaze-interaction-handler></a-image>
+
+                                <!-- Zoom controls -->
+                                <a-image class="right-zoom-button" src="assets/icons/zoom-in.png" position="0.5 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="increase" data-target="right"
+                                        material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: increase; target: right; fuseTimeout: 500"></a-image>
+                                <a-image class="right-zoom-button" src="assets/icons/zoom-out.png" position="0.7 0 0.1"
+                                        scale="0.18 0.18 0.18" data-action="decrease" data-target="right"
+                                        material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: decrease; target: right; fuseTimeout: 500"></a-image>
+                        </a-plane>
+
+                        <!-- Right Video controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="rightVideoControls" material="depthTest: false;" render-order="2">
+                                <a-image src="assets/icons/reset.png" class="right-restart" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: restart; target: right; fuseTimeout: 1000"
+                                        material="depthTest: false;" render-order="3"></a-image>
+                                <a-image src="assets/icons/mute.png" class="right-mute" position="-0.2 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: mute; target: right; fuseTimeout: 1000"
+                                        material="depthTest: false;" render-order="3"></a-image>
+                                <a-image class="right-fast-backward" src="assets/icons/fastbackward.png"
+                                        position="0.5 0 0.1" scale="0.18 0.18 0.18" data-action="backward"
+                                        data-target="right" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: backward; target: right; fuseTimeout: 500"></a-image>
+                                <a-image class="right-fast-forward" src="assets/icons/fastforward.png"
+                                        position="0.7 0 0.1" scale="0.18 0.18 0.18" data-action="forward"
+                                        data-target="right" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: forward; target: right; fuseTimeout: 500"></a-image>
+                        </a-plane>
+
+                        <!-- Right 3D controls -->
+                        <a-plane visible="false" opacity="0" position="0 -1.8 0.1" width="1.8" height="0.4"
+                                id="right3dControls" material="depthTest: false;" render-order="2">
+                                <a-image src="assets/icons/reset.png" class="right-3dreset" position="-0.7 0 0.1"
+                                        scale="0.18 0.18 0.18"
+                                        gaze-interaction-handler="action: 3dreset; target: right; fuseTimeout: 1000"
+                                        material="depthTest: false;" render-order="3"></a-image>
+
+                                <!-- Rotating arrows - ADDED gaze-interaction-handler -->
+                                <a-image src="assets/icons/up.png" class="right-roller" id="right-roller-up"
+                                        position="0 0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="up" data-target="right"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/right.png" class="right-roller" id="right-roller-right"
+                                        position="0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="right" data-target="right"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/down.png" class="right-roller" id="right-roller-down"
+                                        position="0 -0.1 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="down" data-target="right"
+                                        gaze-interaction-handler></a-image>
+                                <a-image src="assets/icons/left.png" class="right-roller" id="right-roller-left"
+                                        position="-0.2 0 0.1" scale="0.18 0.18 0.18" material="depthTest: false;"
+                                        render-order="3" data-direction="left" data-target="right"
+                                        gaze-interaction-handler></a-image>
+
+                                <!-- Zoom controls -->
+                                <a-image class="right-model-zoom-button" src="assets/icons/zoom-in.png"
+                                        position="0.5 0 0.1" scale="0.18 0.18 0.18" data-action="3dincrease"
+                                        data-target="right" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: 3dincrease; target: right; fuseTimeout: 500"></a-image>
+                                <a-image class="right-model-zoom-button" src="assets/icons/zoom-out.png"
+                                        position="0.7 0 0.1" scale="0.18 0.18 0.18" data-action="3ddecrease"
+                                        data-target="right" material="depthTest: false;" render-order="3"
+                                        gaze-interaction-handler="action: 3ddecrease; target: right; fuseTimeout: 500"></a-image>
+                        </a-plane>
+                </a-entity>
+
+        </a-scene>
+        <div id="log" style="display: none; position: fixed;
+    bottom: 0;left:0;
+    z-index: 10000;
+    background-color: white;"> </div>
+</body>
+
+</html>

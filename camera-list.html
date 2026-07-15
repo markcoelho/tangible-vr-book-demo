@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartphone Camera IDs</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .camera-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; background: #f9f9f9; }
+        .id-text { font-family: monospace; word-break: break-all; color: #d63384; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+    </style>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+</head>
+<body>
+
+    <h1>Device Camera IDs</h1>
+    <p>Click the button to request permission and list available cameras.</p>
+    <button onclick="listCameras()">Show My Cameras</button>
+    
+    <div id="cameraList" style="margin-top: 20px;"></div>
+
+    <script>
+        async function listCameras() {
+            const listElement = document.getElementById('cameraList');
+            listElement.innerHTML = "Requesting permission...";
+
+            try {
+                // Step 1: Request permission (required to see device labels/names)
+                await navigator.mediaDevices.getUserMedia({ video: true });
+
+                // Step 2: Enumerate all media devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                
+                // Step 3: Filter for video input (cameras)
+                const cameras = devices.filter(device => device.kind === 'videoinput');
+
+                listElement.innerHTML = `<h3>Found ${cameras.length} Camera(s):</h3>`;
+
+                cameras.forEach((camera, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'camera-card';
+                    card.innerHTML = `
+                        <strong>${camera.label || 'Camera ' + (index + 1)}</strong><br>
+                        <span>Device ID:</span> <span class="id-text">${camera.deviceId}</span><br>
+                        <small>Group ID: ${camera.groupId}</small>
+                    `;
+                    listElement.appendChild(card);
+                });
+
+            } catch (err) {
+                listElement.innerHTML = `<p style="color:red;">Error: ${err.message}. Ensure you are using HTTPS.</p>`;
+                console.error(err);
+            }
+                  // Add p element with WebVRPolyfill.version
+        const versionP = document.createElement('p');
+        versionP.textContent = `WebVRPolyfill version: ${WebVRPolyfill ? WebVRPolyfill.version : 'Not loaded'}`;
+        document.body.appendChild(versionP);
+        }
+
+  
+        
+    </script>
+</body>
+</html>

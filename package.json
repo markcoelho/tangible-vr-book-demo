@@ -1,0 +1,13 @@
+{
+  "name": "mindar-server",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "https": "^1.0.0",
+    "selfsigned": "^2.1.1"
+  }
+}

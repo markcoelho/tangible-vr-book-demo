@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>JSON Builder - Exhibit Config</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 24px 20px;
+            color: #0f172a;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 28px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            align-items: center;
+        }
+        button {
+            background: #1e293b;
+            border: none;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        button.primary {
+            background: #3b82f6;
+        }
+        button.primary:hover {
+            background: #2563eb;
+        }
+        button.danger {
+            background: #ef4444;
+        }
+        button.success {
+            background: #10b981;
+        }
+        button.small {
+            padding: 4px 10px;
+            font-size: 0.7rem;
+        }
+        button:hover {
+            filter: brightness(0.94);
+        }
+        .json-preview {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 20px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            margin-bottom: 28px;
+        }
+        .pages-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .page-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .page-header {
+            background: #f8fafc;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .page-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            background: #e6f0ff;
+            padding: 4px 14px;
+            border-radius: 100px;
+        }
+        .section {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .section h3 {
+            font-size: 1rem;
+            margin: 0 0 12px 0;
+            font-weight: 600;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+        }
+        .fields-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 12px;
+            align-items: flex-end;
+        }
+        .field-group {
+            flex: 1;
+            min-width: 140px;
+        }
+        .src-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .src-wrapper input {
+            flex: 1;
+        }
+        label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #475569;
+            display: block;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 14px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.85rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+        }
+        input:disabled {
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+        .inline-badge {
+            background: #eef2ff;
+            padding: 4px 10px;
+            border-radius: 24px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        .array-item {
+            background: #f9f9fc;
+            border-radius: 18px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .marker-item {
+            background: #fefce8;
+            border-left: 4px solid #eab308;
+            border-radius: 18px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            background: white;
+            border-radius: 28px;
+            border: 1px dashed #cbd5e1;
+        }
+        .rotation-fields {
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 14px;
+            margin-top: 8px;
+        }
+        @media (max-width: 700px) {
+            body { padding: 16px; }
+            .fields-row { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Tangible VR Book content builder 
+        <div style="display: flex; gap: 10px;">
+            <button id="importJsonBtn" class="success">📂 Import JSON</button>
+            <button id="exportJsonBtn" class="primary">📥 Export JSON</button>
+        </div>
+    </h1>
+
+    <div class="toolbar">
+        <button id="addPageBtn">➕ Add New Page</button>
+        <button id="clearAllBtn" class="danger">🗑 Clear All Pages</button>
+    </div>
+
+    <div id="pagesContainer" class="pages-grid"></div>
+    
+    <div style="margin-top: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+            <h3>📄 JSON Output</h3>
+            <button id="copyJsonBtn" style="background:#334155;">📋 Copy JSON</button>
+        </div>
+        <div id="jsonPreview" class="json-preview">{}</div>
+    </div>
+</div>
+
+<script>
+    let appData = { pages: [] };
+
+    function createEmptyPage(barcodeNum) {
+        return {
+            barcode_number: barcodeNum,
+            narration: "",
+            surround: "",
+            surround_rotation: 0,
+            central_side: [],
+            left_side: [],
+            right_side: [],
+            marker: []
+        };
+    }
+
+    function syncBarcodes() {
+        for (let i = 0; i < appData.pages.length; i++) {
+            appData.pages[i].barcode_number = i;
+        }
+    }
+
+    function escapeHtml(str) { 
+        if(!str) return ''; 
+        return String(str).replace(/[&<>]/g, function(m){
+            if(m==='&') return '&amp;'; 
+            if(m==='<') return '&lt;'; 
+            if(m==='>') return '&gt;'; 
+            return m;
+        }); 
+    }
+    
+    function getTypeOptions(selected) {
+        const types = ['image', 'video', '3d'];
+        return types.map(t => `<option value="${t}" ${selected === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
+    }
+
+    // Simple file picker - sets path as "assets/filename"
+    function attachFilePicker(button, inputElement) {
+        button.addEventListener('click', () => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    inputElement.value = 'assets/' + file.name;
+                    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            };
+            fileInput.click();
+        });
+    }
+
+    function updateRotationFields(wrapper, isAutoRotate) {
+        const rotXInput = wrapper.querySelector('.content-rot-x, .marker-rot-x');
+        const rotYInput = wrapper.querySelector('.content-rot-y, .marker-rot-y');
+        const rotZInput = wrapper.querySelector('.content-rot-z, .marker-rot-z');
+        
+        if (rotXInput && rotYInput && rotZInput) {
+            rotXInput.disabled = isAutoRotate;
+            rotYInput.disabled = isAutoRotate;
+            rotZInput.disabled = isAutoRotate;
+            if (isAutoRotate) {
+                rotXInput.value = 0;
+                rotYInput.value = 0;
+                rotZInput.value = 0;
+            }
+        }
+    }
+
+    function createSideItemEditor(item, index, sideKey) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'array-item';
+        
+        const typeVal = item.type || 'image';
+        const controlsVal = item.controls || 'true';
+        const srcVal = item.src || '';
+        const scaleVal = item.scale !== undefined ? item.scale : 1;
+        const autoplayVal = item.autoplay !== undefined ? item.autoplay : 'false';
+        const rotation = item.rotation || { x: 0, y: 0, z: 0 };
+        const autoRotateVal = item.auto_rotate !== undefined ? item.auto_rotate : false;
+        
+        const showRotation = typeVal === '3d';
+        const showAutoplay = typeVal === 'video';
+        
+        wrapper.innerHTML = `
+            <div class="fields-row">
+                <div class="field-group"><label>Type</label><select class="content-type">${getTypeOptions(typeVal)}</select></div>
+                <div class="field-group"><label>Controls</label><input class="content-controls" value="${escapeHtml(controlsVal)}"></div>
+                <div class="field-group">
+                    <label>Source (assets/)</label>
+                    <div class="src-wrapper">
+                        <input class="content-src" value="${escapeHtml(srcVal)}" placeholder="...">
+                        <button class="browse-btn small" style="background:#64748b;">📁</button>
+                    </div>
+                </div>
+                <div class="field-group"><label>Scale</label><input type="number" step="any" class="content-scale" value="${scaleVal}"></div>
+            </div>
+            ${showAutoplay ? `<div class="fields-row"><div class="field-group"><label>Autoplay</label><input class="content-autoplay" value="${escapeHtml(autoplayVal)}"></div></div>` : ''}
+            ${showRotation ? `
+            <div class="rotation-fields">
+                <div class="fields-row">
+                    <div class="field-group"><label>Rot X</label><input type="number" step="any" class="content-rot-x" value="${rotation.x}" ${autoRotateVal ? 'disabled' : ''}></div>
+                    <div class="field-group"><label>Rot Y</label><input type="number" step="any" class="content-rot-y" value="${rotation.y}" ${autoRotateVal ? 'disabled' : ''}></div>
+                    <div class="field-group"><label>Rot Z</label><input type="number" step="any" class="content-rot-z" value="${rotation.z}" ${autoRotateVal ? 'disabled' : ''}></div>
+                    <div class="field-group"><label>Auto Rotate</label><select class="content-auto-rotate">
+                        <option value="true" ${autoRotateVal === true ? 'selected' : ''}>true</option>
+                        <option value="false" ${autoRotateVal === false ? 'selected' : ''}>false</option>
+                    </select></div>
+                </div>
+            </div>
+            ` : ''}
+            <button class="remove-item-btn" data-side="${sideKey}" data-idx="${index}" style="background:#fee2e2; border:none; padding:5px 12px; border-radius:20px; cursor:pointer; margin-top:8px;">✖ Remove</button>
+        `;
+        
+        const typeSelect = wrapper.querySelector('.content-type');
+        const srcInput = wrapper.querySelector('.content-src');
+        const browseBtn = wrapper.querySelector('.browse-btn');
+        
+        attachFilePicker(browseBtn, srcInput);
+        
+        typeSelect.addEventListener('change', function() {
+            const newType = this.value;
+            const currentItem = extractSideItemFromEditor(wrapper);
+            currentItem.type = newType;
+            if (newType !== '3d') {
+                delete currentItem.rotation;
+                delete currentItem.auto_rotate;
+            }
+            if (newType !== 'video') {
+                delete currentItem.autoplay;
+            }
+            const newEditor = createSideItemEditor(currentItem, index, sideKey);
+            wrapper.parentNode.replaceChild(newEditor, wrapper);
+        });
+        
+        if (showRotation) {
+            const autoRotateSelect = wrapper.querySelector('.content-auto-rotate');
+            autoRotateSelect.addEventListener('change', function() {
+                updateRotationFields(wrapper, this.value === 'true');
+            });
+        }
+        
+        return wrapper;
+    }
+    
+    function createMarkerEditor(marker, index) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'marker-item';
+        
+        const typeVal = marker.type || 'image';
+        const controlsVal = marker.controls || 'true';
+        const srcVal = marker.src || '';
+        const scaleVal = marker.scale !== undefined ? marker.scale : 1;
+        const autoplayVal = marker.autoplay !== undefined ? marker.autoplay : 'false';
+        const rotation = marker.rotation || { x: 0, y: 0, z: 0 };
+        const autoRotateVal = marker.auto_rotate !== undefined ? marker.auto_rotate : false;
+        
+        const showRotation = typeVal === '3d';
+        const showAutoplay = typeVal === 'video';
+        
+        wrapper.innerHTML = `
+            <div class="fields-row">
+                <div class="field-group"><label>Type</label><select class="marker-type">${getTypeOptions(typeVal)}</select></div>
+                <div class="field-group"><label>Controls</label><input class="marker-controls" value="${escapeHtml(controlsVal)}"></div>
+                <div class="field-group">
+                    <label>Source (assets/)</label>
+                    <div class="src-wrapper">
+                        <input class="marker-src" value="${escapeHtml(srcVal)}" placeholder="...">
+                        <button class="browse-btn small" style="background:#64748b;">📁</button>
+                    </div>
+                </div>
+                <div class="field-group"><label>Scale</label><input type="number" step="any" class="marker-scale" value="${scaleVal}"></div>
+            </div>
+            ${showAutoplay ? `<div class="fields-row"><div class="field-group"><label>Autoplay</label><input class="marker-autoplay" value="${escapeHtml(autoplayVal)}"></div></div>` : ''}
+            ${showRotation ? `
+            <div class="rotation-fields">
+                <div class="fields-row">
+                    <div class="field-group"><label>Rot X</label><input type="number" step="any" class="marker-rot-x" value="${rotation.x}" ${autoRotateVal ? 'disabled' : ''}></div>
+                    <div class="field-group"><label>Rot Y</label><input type="number" step="any" class="marker-rot-y" value="${rotation.y}" ${autoRotateVal ? 'disabled' : ''}></div>
+                    <div class="field-group"><label>Rot Z</label><input type="number" step="any" class="marker-rot-z" value="${rotation.z}" ${autoRotateVal ? 'disabled' : ''}></div>
+                    <div class="field-group"><label>Auto Rotate</label><select class="marker-auto-rotate">
+                        <option value="true" ${autoRotateVal === true ? 'selected' : ''}>true</option>
+                        <option value="false" ${autoRotateVal === false ? 'selected' : ''}>false</option>
+                    </select></div>
+                </div>
+            </div>
+            ` : ''}
+            <button class="remove-marker-btn" data-idx="${index}" style="background:#fee2e2; border:none; padding:5px 12px; border-radius:20px; cursor:pointer; margin-top:8px;">✖ Remove</button>
+        `;
+        
+        const typeSelect = wrapper.querySelector('.marker-type');
+        const srcInput = wrapper.querySelector('.marker-src');
+        const browseBtn = wrapper.querySelector('.browse-btn');
+        
+        attachFilePicker(browseBtn, srcInput);
+        
+        typeSelect.addEventListener('change', function() {
+            const newType = this.value;
+            const currentMarker = extractMarkerFromEditor(wrapper);
+            currentMarker.type = newType;
+            if (newType !== '3d') {
+                delete currentMarker.rotation;
+                delete currentMarker.auto_rotate;
+            }
+            if (newType !== 'video') {
+                delete currentMarker.autoplay;
+            }
+            const newEditor = createMarkerEditor(currentMarker, index);
+            wrapper.parentNode.replaceChild(newEditor, wrapper);
+        });
+        
+        if (showRotation) {
+            const autoRotateSelect = wrapper.querySelector('.marker-auto-rotate');
+            autoRotateSelect.addEventListener('change', function() {
+                updateRotationFields(wrapper, this.value === 'true');
+            });
+        }
+        
+        return wrapper;
+    }
+    
+    function extractSideItemFromEditor(editorDiv) {
+        const type = editorDiv.querySelector('.content-type')?.value;
+        const controls = editorDiv.querySelector('.content-controls')?.value;
+        let src = editorDiv.querySelector('.content-src')?.value;
+        const scale = parseFloat(editorDiv.querySelector('.content-scale')?.value);
+        
+        // Remove assets/ prefix if user typed it, to avoid duplication
+        if (src && src.startsWith('assets/')) {
+            src = src.substring(7);
+        }
+        
+        const content = { type, controls, src, scale };
+        
+        if (type === 'video') {
+            const autoplay = editorDiv.querySelector('.content-autoplay')?.value;
+            if (autoplay) content.autoplay = autoplay;
+        }
+        
+        if (type === '3d') {
+            const autoRotate = editorDiv.querySelector('.content-auto-rotate')?.value === 'true';
+            content.auto_rotate = autoRotate;
+            if (!autoRotate) {
+                const rotX = parseFloat(editorDiv.querySelector('.content-rot-x')?.value || 0);
+                const rotY = parseFloat(editorDiv.querySelector('.content-rot-y')?.value || 0);
+                const rotZ = parseFloat(editorDiv.querySelector('.content-rot-z')?.value || 0);
+                content.rotation = { x: rotX, y: rotY, z: rotZ };
+            } else {
+                content.rotation = { x: 0, y: 0, z: 0 };
+            }
+        }
+        return content;
+    }
+    
+    function extractMarkerFromEditor(editorDiv) {
+        const type = editorDiv.querySelector('.marker-type')?.value;
+        const controls = editorDiv.querySelector('.marker-controls')?.value;
+        let src = editorDiv.querySelector('.marker-src')?.value;
+        const scale = parseFloat(editorDiv.querySelector('.marker-scale')?.value);
+        
+        if (src && src.startsWith('assets/')) {
+            src = src.substring(7);
+        }
+        
+        const content = { type, controls, src, scale };
+        
+        if (type === 'video') {
+            const autoplay = editorDiv.querySelector('.marker-autoplay')?.value;
+            if (autoplay) content.autoplay = autoplay;
+        }
+        
+        if (type === '3d') {
+            const autoRotate = editorDiv.querySelector('.marker-auto-rotate')?.value === 'true';
+            content.auto_rotate = autoRotate;
+            if (!autoRotate) {
+                const rotX = parseFloat(editorDiv.querySelector('.marker-rot-x')?.value || 0);
+                const rotY = parseFloat(editorDiv.querySelector('.marker-rot-y')?.value || 0);
+                const rotZ = parseFloat(editorDiv.querySelector('.marker-rot-z')?.value || 0);
+                content.rotation = { x: rotX, y: rotY, z: rotZ };
+            } else {
+                content.rotation = { x: 0, y: 0, z: 0 };
+            }
+        }
+        return content;
+    }
+
+    function loadJsonData(jsonData) {
+        try {
+            let data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+            let pagesData = data.pages || (data.narrator ? data.pages : data);
+            
+            if (!pagesData || !Array.isArray(pagesData)) {
+                throw new Error('Invalid JSON format');
+            }
+            
+            const newPages = [];
+            for (let i = 0; i < pagesData.length; i++) {
+                const importedPage = pagesData[i];
+                newPages.push({
+                    barcode_number: i,
+                    narration: importedPage.narration || "",
+                    surround: importedPage.surround || "",
+                    surround_rotation: importedPage.surround_rotation || 0,
+                    central_side: importedPage.central_side || [],
+                    left_side: importedPage.left_side || [],
+                    right_side: importedPage.right_side || [],
+                    marker: importedPage.marker || []
+                });
+            }
+            appData.pages = newPages;
+            renderApp();
+            updateJsonPreview();
+            alert(`Imported ${newPages.length} page(s)!`);
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+
+    function renderApp() {
+        const container = document.getElementById('pagesContainer');
+        if (!container) return;
+        
+        if (appData.pages.length === 0) {
+            container.innerHTML = `<div class="empty-state">📭 No pages. Click "Add New Page" to start.</div>`;
+            updateJsonPreview();
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        appData.pages.forEach((page, idx) => {
+            const pageCard = document.createElement('div');
+            pageCard.className = 'page-card';
+
+            const header = document.createElement('div');
+            header.className = 'page-header';
+            header.innerHTML = `
+                <div class="page-title">📄 Page ${idx}</div>
+                <button class="remove-page-btn" data-idx="${idx}" style="background:#fee2e2; color:#991b1b;">🗑 Remove</button>
+            `;
+
+            const contentDiv = document.createElement('div');
+            
+            const topFields = document.createElement('div');
+            topFields.className = 'section';
+            topFields.innerHTML = `
+                <h3>Page Settings</h3>
+                <div class="fields-row">
+                    <div class="field-group">
+                        <label>Narration Audio (assets/)</label>
+                        <div class="src-wrapper">
+                            <input type="text" class="narration-input" value="${escapeHtml(page.narration)}" placeholder="...">
+                            <button class="browse-narration small" style="background:#64748b;">📁</button>
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>360° Surround (assets/)</label>
+                        <div class="src-wrapper">
+                            <input type="text" class="surround-input" value="${escapeHtml(page.surround)}" placeholder="...">
+                            <button class="browse-surround small" style="background:#64748b;">📁</button>
+                        </div>
+                    </div>
+                    <div class="field-group"><label>Surround Rot</label><input type="number" step="any" class="surround-rot-input" value="${page.surround_rotation}"></div>
+                </div>
+            `;
+            
+            // Add pickers for narration and surround
+            const narrationInput = topFields.querySelector('.narration-input');
+            const narrationBrowse = topFields.querySelector('.browse-narration');
+            if (narrationBrowse && narrationInput) {
+                narrationBrowse.addEventListener('click', () => {
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = 'audio/*';
+                    fileInput.onchange = (e) => {
+                        if (e.target.files[0]) {
+                            narrationInput.value = 'assets/' + e.target.files[0].name;
+                            narrationInput.dispatchEvent(new Event('input'));
+                        }
+                    };
+                    fileInput.click();
+                });
+            }
+            
+            const surroundInput = topFields.querySelector('.surround-input');
+            const surroundBrowse = topFields.querySelector('.browse-surround');
+            if (surroundBrowse && surroundInput) {
+                surroundBrowse.addEventListener('click', () => {
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = 'image/*,video/*';
+                    fileInput.onchange = (e) => {
+                        if (e.target.files[0]) {
+                            surroundInput.value = 'assets/' + e.target.files[0].name;
+                            surroundInput.dispatchEvent(new Event('input'));
+                        }
+                    };
+                    fileInput.click();
+                });
+            }
+            
+            function renderSideArray(sideKey, title) {
+                const items = page[sideKey] || [];
+                const div = document.createElement('div');
+                div.className = 'section';
+                div.innerHTML = `<h3>${title} <span class="inline-badge">${items.length}</span>
+                    <button class="add-side-item" data-side="${sideKey}" style="background:#eef2ff;">+ Add</button>
+                </h3>
+                <div class="side-items-container" data-side="${sideKey}"></div>`;
+                const itemsContainer = div.querySelector('.side-items-container');
+                items.forEach((item, itemIdx) => {
+                    itemsContainer.appendChild(createSideItemEditor(item, itemIdx, sideKey));
+                });
+                if (items.length === 0) {
+                    itemsContainer.innerHTML = '<div style="color:#94a3b8; padding:8px;">No items. Click "+ Add"</div>';
+                }
+                return div;
+            }
+            
+            function renderMarker() {
+                const div = document.createElement('div');
+                div.className = 'section';
+                const markers = page.marker || [];
+                const hasContent = markers.length > 0 && markers[0] && markers[0].type;
+                
+                div.innerHTML = `<h3>📍 Marker <span class="inline-badge">${markers.length}/1</span>
+                    ${!hasContent ? '<button class="add-marker-btn" style="background:#eef2ff;">+ Add</button>' : ''}
+                </h3>
+                <div class="marker-container"></div>`;
+                
+                const markerContainer = div.querySelector('.marker-container');
+                if (hasContent) {
+                    markerContainer.appendChild(createMarkerEditor(markers[0], 0));
+                } else {
+                    markerContainer.innerHTML = '<div style="color:#94a3b8; padding:8px;">No content. Click "+ Add"</div>';
+                }
+                return div;
+            }
+            
+            contentDiv.appendChild(topFields);
+            contentDiv.appendChild(renderSideArray('central_side', '🎨 Central Side'));
+            contentDiv.appendChild(renderSideArray('left_side', '⬅️ Left Side'));
+            contentDiv.appendChild(renderSideArray('right_side', '➡️ Right Side'));
+            contentDiv.appendChild(renderMarker());
+            
+            pageCard.appendChild(header);
+            pageCard.appendChild(contentDiv);
+            container.appendChild(pageCard);
+        });
+        
+        attachDynamicEvents();
+        updateJsonPreview();
+    }
+    
+    function attachDynamicEvents() {
+        document.querySelectorAll('.remove-page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.idx);
+                appData.pages.splice(idx, 1);
+                syncBarcodes();
+                renderApp();
+            });
+        });
+        
+        document.getElementById('pagesContainer')?.addEventListener('click', (e) => {
+            if (e.target.classList.contains('add-side-item')) {
+                const side = e.target.dataset.side;
+                const pageCard = e.target.closest('.page-card');
+                const idx = Array.from(document.querySelectorAll('.page-card')).indexOf(pageCard);
+                if (idx !== -1) {
+                    if (!appData.pages[idx][side]) appData.pages[idx][side] = [];
+                    appData.pages[idx][side].push({ type: "image", controls: "true", src: "", scale: 1 });
+                    renderApp();
+                }
+            }
+            
+            if (e.target.classList.contains('add-marker-btn')) {
+                const pageCard = e.target.closest('.page-card');
+                const idx = Array.from(document.querySelectorAll('.page-card')).indexOf(pageCard);
+                if (idx !== -1) {
+                    appData.pages[idx].marker = [{ type: "image", controls: "true", src: "", scale: 1 }];
+                    renderApp();
+                }
+            }
+            
+            if (e.target.classList.contains('remove-marker-btn')) {
+                const pageCard = e.target.closest('.page-card');
+                const idx = Array.from(document.querySelectorAll('.page-card')).indexOf(pageCard);
+                if (idx !== -1) {
+                    appData.pages[idx].marker = [];
+                    renderApp();
+                }
+            }
+            
+            if (e.target.classList.contains('remove-item-btn')) {
+                const side = e.target.dataset.side;
+                const itemIdx = parseInt(e.target.dataset.idx);
+                const pageCard = e.target.closest('.page-card');
+                const pIdx = Array.from(document.querySelectorAll('.page-card')).indexOf(pageCard);
+                if (pIdx !== -1 && !isNaN(itemIdx)) {
+                    appData.pages[pIdx][side].splice(itemIdx, 1);
+                    renderApp();
+                }
+            }
+        });
+        
+        document.getElementById('pagesContainer')?.addEventListener('input', (e) => {
+            const target = e.target;
+            const pageCard = target.closest('.page-card');
+            if (!pageCard) return;
+            const pageIndex = Array.from(document.querySelectorAll('.page-card')).indexOf(pageCard);
+            if (pageIndex === -1) return;
+            const page = appData.pages[pageIndex];
+            
+            if (target.classList.contains('narration-input')) {
+                let val = target.value;
+                if (val && !val.startsWith('assets/')) val = 'assets/' + val;
+                page.narration = val;
+            }
+            if (target.classList.contains('surround-input')) {
+                let val = target.value;
+                if (val && !val.startsWith('assets/')) val = 'assets/' + val;
+                page.surround = val;
+            }
+            if (target.classList.contains('surround-rot-input')) page.surround_rotation = parseFloat(target.value);
+            updateJsonPreview();
+        });
+    }
+    
+    function syncFullDataFromDOM() {
+        const cards = document.querySelectorAll('.page-card');
+        for (let i = 0; i < cards.length; i++) {
+            const page = appData.pages[i];
+            if (!page) continue;
+            
+            const narr = cards[i].querySelector('.narration-input');
+            if (narr) page.narration = narr.value;
+            const surround = cards[i].querySelector('.surround-input');
+            if (surround) page.surround = surround.value;
+            const rotSurr = cards[i].querySelector('.surround-rot-input');
+            if (rotSurr) page.surround_rotation = parseFloat(rotSurr.value);
+            
+            ['central_side', 'left_side', 'right_side'].forEach(side => {
+                const container = cards[i].querySelector(`.side-items-container[data-side="${side}"]`);
+                if (container) {
+                    const items = [];
+                    const itemDivs = container.querySelectorAll('.array-item');
+                    itemDivs.forEach(itemDiv => {
+                        const content = extractSideItemFromEditor(itemDiv);
+                        if (content.type) items.push(content);
+                    });
+                    page[side] = items;
+                }
+            });
+            
+            const markerDiv = cards[i].querySelector('.marker-item');
+            if (markerDiv) {
+                const content = extractMarkerFromEditor(markerDiv);
+                if (content.type) page.marker = [content];
+                else page.marker = [];
+            } else {
+                page.marker = [];
+            }
+        }
+    }
+    
+    function updateJsonPreview() {
+        syncFullDataFromDOM();
+        // Add assets/ prefix to all src paths when outputting JSON
+        const finalJson = {
+            pages: appData.pages.map(page => ({
+                ...page,
+                narration: page.narration ? (page.narration.startsWith('assets/') ? page.narration : 'assets/' + page.narration) : "",
+                surround: page.surround ? (page.surround.startsWith('assets/') ? page.surround : 'assets/' + page.surround) : "",
+                central_side: page.central_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                left_side: page.left_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                right_side: page.right_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                marker: page.marker.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                }))
+            }))
+        };
+        document.getElementById('jsonPreview').innerText = JSON.stringify(finalJson, null, 2);
+    }
+    
+    document.getElementById('addPageBtn')?.addEventListener('click', () => {
+        appData.pages.push(createEmptyPage(appData.pages.length));
+        syncBarcodes();
+        renderApp();
+    });
+    
+    document.getElementById('clearAllBtn')?.addEventListener('click', () => {
+        if (confirm('Remove all pages?')) {
+            appData.pages = [];
+            renderApp();
+        }
+    });
+    
+    document.getElementById('exportJsonBtn')?.addEventListener('click', () => {
+        syncFullDataFromDOM();
+        const finalJson = {
+            pages: appData.pages.map(page => ({
+                ...page,
+                narration: page.narration ? (page.narration.startsWith('assets/') ? page.narration : 'assets/' + page.narration) : "",
+                surround: page.surround ? (page.surround.startsWith('assets/') ? page.surround : 'assets/' + page.surround) : "",
+                central_side: page.central_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                left_side: page.left_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                right_side: page.right_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                marker: page.marker.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                }))
+            }))
+        };
+        const dataStr = JSON.stringify(finalJson, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'exhibit_config.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+    
+    document.getElementById('copyJsonBtn')?.addEventListener('click', () => {
+        syncFullDataFromDOM();
+        const finalJson = {
+            pages: appData.pages.map(page => ({
+                ...page,
+                narration: page.narration ? (page.narration.startsWith('assets/') ? page.narration : 'assets/' + page.narration) : "",
+                surround: page.surround ? (page.surround.startsWith('assets/') ? page.surround : 'assets/' + page.surround) : "",
+                central_side: page.central_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                left_side: page.left_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                right_side: page.right_side.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                })),
+                marker: page.marker.map(item => ({
+                    ...item,
+                    src: item.src ? (item.src.startsWith('assets/') ? item.src : 'assets/' + item.src) : ""
+                }))
+            }))
+        };
+        const jsonStr = JSON.stringify(finalJson, null, 2);
+        navigator.clipboard.writeText(jsonStr);
+        alert('JSON copied!');
+    });
+    
+    document.getElementById('importJsonBtn')?.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => loadJsonData(event.target.result);
+            reader.readAsText(file);
+        };
+        input.click();
+    });
+    
+    renderApp();
+</script>
+</body>
+</html>
