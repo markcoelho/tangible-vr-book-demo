@@ -3,7 +3,12 @@
 const AppContent = {
     data: null,
 
-    jsonFile: 'content.json',
+    //jsonFile: 'content.json', 
+    //jsonFile: 'contentcenter.json', 
+    jsonFile: 'contentcenterandmarker.json',
+    //jsonFile: 'contentpt.json', 
+    //jsonFile: 'contentcenterpt.json', 
+    //jsonFile: 'contentcenterandmarkerpt.json', 
     
     // Load JSON content
     async load(jsonUrl = null) {
@@ -107,45 +112,64 @@ const AppContent = {
     },
 
     createSurroundElements(surroundSrc, surroundRotation, pageIndex, scene) {
-        if (!surroundSrc) return null;
+    if (!surroundSrc) return null;
+    
+    // Determine if it's a video or image based on file extension
+    const isVideo = surroundSrc.match(/\.(mp4|webm|ogg)$/i);
+    let surroundElement;
+    
+    if (isVideo) {
+        // Create videosphere
+        surroundElement = document.createElement('a-videosphere');
+        surroundElement.id = `surround_${pageIndex}`;
+        surroundElement.setAttribute('src', surroundSrc);
+        surroundElement.setAttribute('rotation', `0 ${surroundRotation || 0} 0`);
+        surroundElement.setAttribute('radius', '40');
+        surroundElement.setAttribute('visible', 'false');
         
-        // Determine if it's a video or image based on file extension
-        const isVideo = surroundSrc.match(/\.(mp4|webm|ogg)$/i);
-        let surroundElement;
-        
-        if (isVideo) {
-            // Create videosphere
-            surroundElement = document.createElement('a-videosphere');
-            surroundElement.id = `surround_${pageIndex}`;
-            surroundElement.setAttribute('src', surroundSrc);
-            surroundElement.setAttribute('rotation', `0 ${surroundRotation || 0} 0`);  // ✅ This sets the Y rotation
-            surroundElement.setAttribute('radius', '40');
-            surroundElement.setAttribute('visible', 'false');
-            
-            // Pause video immediately
-            surroundElement.addEventListener('loadedmetadata', () => {
-                try {
-                    surroundElement.components.material.material.map.image.pause();
-                } catch(e) {
-                    console.warn('Could not pause surround video:', e);
+        // ⭐ CRITICAL: Pause video immediately when loaded
+        surroundElement.addEventListener('loadedmetadata', () => {
+            try {
+                const video = surroundElement.components.material.material.map.image;
+                if (video && video instanceof HTMLVideoElement) {
+                    video.pause();
+                    // Also prevent autoplay
+                    video.autoplay = false;
+                    console.log(`⏸️ Paused surround video for page ${pageIndex} (initial load)`);
                 }
-            });
-        } else {
-            // Create sphere for 360 image
-            surroundElement = document.createElement('a-sphere');
-            surroundElement.id = `surround_${pageIndex}`;
-            surroundElement.setAttribute('src', surroundSrc);
-            surroundElement.setAttribute('rotation', `0 ${surroundRotation || 0} 0`);  // ✅ This sets the Y rotation
-            surroundElement.setAttribute('radius', '40');
-            surroundElement.setAttribute('material', 'shader: flat; side: back');
-            surroundElement.setAttribute('visible', 'false');
-        }
+            } catch(e) {
+                console.warn('Could not pause surround video:', e);
+            }
+        });
         
-        scene.appendChild(surroundElement);
-        console.log(`Created surround element for page ${pageIndex}: ${surroundSrc} with rotation: ${surroundRotation || 0}°`);
+        // ⭐ Also pause if video loads through other means
+        surroundElement.addEventListener('loadeddata', () => {
+            try {
+                const video = surroundElement.components.material.material.map.image;
+                if (video && video instanceof HTMLVideoElement) {
+                    video.pause();
+                }
+            } catch(e) {
+                // Ignore
+            }
+        });
         
-        return surroundElement;
-    },
+    } else {
+        // Create sphere for 360 image
+        surroundElement = document.createElement('a-sphere');
+        surroundElement.id = `surround_${pageIndex}`;
+        surroundElement.setAttribute('src', surroundSrc);
+        surroundElement.setAttribute('rotation', `0 ${surroundRotation || 0} 0`);
+        surroundElement.setAttribute('radius', '40');
+        surroundElement.setAttribute('material', 'shader: flat; side: back');
+        surroundElement.setAttribute('visible', 'false');
+    }
+    
+    scene.appendChild(surroundElement);
+    console.log(`Created surround element for page ${pageIndex}: ${surroundSrc} with rotation: ${surroundRotation || 0}°`);
+    
+    return surroundElement;
+},
     
     // Create elements for centerpiece, leftpiece, rightpiece
     createSideElements(containerType, items, pageIndex, scene) {

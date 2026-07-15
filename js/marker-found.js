@@ -148,6 +148,21 @@
     stopAllNarration();
     pauseAllVideos();
 
+        if (currentVisibleMarker) {
+        const previousSurround = document.getElementById(`surround_${currentVisibleMarker}`);
+        if (previousSurround && previousSurround.tagName === 'A-VIDEOSPHERE') {
+            try {
+                const video = previousSurround.components.material.material.map.image;
+                if (video && video instanceof HTMLVideoElement) {
+                    video.pause();
+                    console.log(`⏸️ Paused surround video for previous marker: ${currentVisibleMarker}`);
+                }
+            } catch(e) {
+                // Ignore
+            }
+        }
+    }
+
     const narrationElement = document.getElementById(`narration_${value}`);
     if (narrationElement) {
         try {
@@ -158,14 +173,20 @@
     }
 
     // Show surround element for this marker if it exists
-    const surroundElement = document.getElementById(`surround_${value}`);
+        const surroundElement = document.getElementById(`surround_${value}`);
     if (surroundElement) {
         surroundElement.setAttribute('visible', true);
         if (surroundElement.tagName === 'A-VIDEOSPHERE') {
             try {
-                surroundElement.components.material.material.map.image.play();
+                const video = surroundElement.components.material.material.map.image;
+                if (video && video instanceof HTMLVideoElement) {
+                    // Reset to beginning and play
+                    video.currentTime = 0;
+                    video.play().catch(e => console.warn('Could not play surround video:', e));
+                    console.log(`▶️ Playing surround video for marker: ${value}`);
+                }
             } catch(e) {
-                // Ignore errors
+                console.warn('Could not play surround video:', e);
             }
         }
     }
@@ -278,7 +299,21 @@
                     debounceTimer = null;
                 }
 
-                if (currentVisibleMarker === value) {
+                    if (currentVisibleMarker === value) {
+                    // ⭐ PAUSE surround video when marker is lost
+                    const surroundElement = document.getElementById(`surround_${value}`);
+                    if (surroundElement && surroundElement.tagName === 'A-VIDEOSPHERE') {
+                        try {
+                            const video = surroundElement.components.material.material.map.image;
+                            if (video && video instanceof HTMLVideoElement) {
+                                video.pause();
+                                console.log(`⏸️ Paused surround video for marker ${value}`);
+                            }
+                        } catch(e) {
+                            console.warn(`Could not pause surround video: ${e}`);
+                        }
+                    }
+
                     // Find and pause any videos on this marker
                     const markerPiece = document.getElementById('markerpiece_' + value);
                     if (markerPiece) {
