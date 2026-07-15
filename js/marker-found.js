@@ -306,22 +306,6 @@
                 }
 
                 if (currentVisibleMarker === value) {
-                    // ⭐ PAUSE and HIDE surround video when marker is lost
-                    const surroundElement = document.getElementById(`surround_${value}`);
-                    if (surroundElement) {
-                        surroundElement.setAttribute('visible', 'false');
-                        if (surroundElement.tagName === 'A-VIDEOSPHERE') {
-                            try {
-                                const video = surroundElement.components.material.material.map.image;
-                                if (video && video instanceof HTMLVideoElement) {
-                                    video.pause();
-                                    console.log(`⏸️ Paused surround video for marker ${value}`);
-                                }
-                            } catch(e) {
-                                console.warn(`Could not pause surround video: ${e}`);
-                            }
-                        }
-                    }
 
                     // Find and pause any videos on this marker
                     const markerPiece = document.getElementById('markerpiece_' + value);
